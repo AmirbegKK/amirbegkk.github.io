@@ -1,0 +1,67 @@
+override fun reversed(): RightRegularGrammar {
+
+            val newRules = this.rules.keys.associateWith {
+                mutableSetOf<RegularGrammarRule>()
+            }
+            val rightGrammarWithoutLambda = toLambdaFree();
+            for (rule in rightGrammarWithoutLambda.rules.getValue(startVariable)) {
+                if (rule is RegularGrammarRule.NonTerminalRule.RightRule)
+                    newRules.getValue(rule.nonTerminal).add(
+                            RegularGrammarRule.LetterRule(rule.letter)
+                    )
+                else newRules.getValue(startVariable).add(rule)
+            }
+            for (nonTerm in rightGrammarWithoutLambda.rules.keys.minus(startVariable)) {
+                for (rule in rightGrammarWithoutLambda.rules.getValue(nonTerm)) {
+                    when (rule) {
+                        is RegularGrammarRule.LetterRule -> newRules.getValue(startVariable).add(
+                                RegularGrammarRule.NonTerminalRule.RightRule(rule.letter, nonTerm)
+                        )
+                        is RegularGrammarRule.NonTerminalRule.RightRule -> newRules.getValue(rule.nonTerminal).add(
+                                RegularGrammarRule.NonTerminalRule.RightRule(rule.letter, nonTerm)
+                        )
+                        else -> newRules.getValue(nonTerm).add(rule)
+                    }
+                }
+            }
+            return RightRegularGrammar(startVariable, newRules)
+        }
+        
+        @Test
+    fun reverseTest() {
+        val grammarA = RightRegularGrammar(
+                NonTerminalSymbol('S'),
+                mapOf(
+                        NonTerminalSymbol('A') to setOf(
+                                LetterRule('c')
+                        ),
+                        NonTerminalSymbol('B') to setOf(
+                                RightRule('b', NonTerminalSymbol('A'))
+                        ),
+                        NonTerminalSymbol('S') to setOf(
+                                RightRule('a', NonTerminalSymbol('B')),
+                                RightRule('b', NonTerminalSymbol('A'))
+                               /* LetterRule('c')*/
+                        )
+                )
+        )
+
+        val grammarS = RightRegularGrammar(
+                NonTerminalSymbol('S'),
+                mapOf(
+                        NonTerminalSymbol('B') to setOf(
+                                LetterRule('a'),
+                                EmptyRule
+                        ),
+                        NonTerminalSymbol('A') to setOf(
+                                RightRule('b', NonTerminalSymbol('B'))
+                        ),
+                        NonTerminalSymbol('S') to setOf(
+                               // LetterRule('c'),
+                                RightRule('c', NonTerminalSymbol('A'))
+                        )
+                )
+        )
+
+        assertEquals(grammarA, grammarS.reversed())
+    }
